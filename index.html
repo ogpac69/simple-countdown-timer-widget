@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Countdown Timer</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                   'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg, #0f0f0f);
+      color: var(--text, #ffffff);
+      transition: background-color 0.3s ease;
+      overflow: hidden;
+    }
+
+    /* ─── Widget Container ─────────────────────────────────── */
+    .widget {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ─── Title ────────────────────────────────────────────── */
+    .title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.75;
+      color: var(--text, #ffffff);
+      margin-bottom: 4px;
+    }
+
+    /* ─── Timer Row ────────────────────────────────────────── */
+    .timer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    /* ─── Individual Unit Block ────────────────────────────── */
+    .unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 20px 26px;
+      min-width: 96px;
+      backdrop-filter: blur(4px);
+      transition: transform 0.15s ease;
+    }
+
+    .unit:hover {
+      transform: translateY(-2px);
+    }
+
+    /* ─── Number inside unit ───────────────────────────────── */
+    .unit .number {
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      /* color set inline via JS */
+    }
+
+    /* ─── Label under number ───────────────────────────────── */
+    .unit .label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 8px;
+      opacity: 0.5;
+      color: var(--text, #ffffff);
+    }
+
+    /* ─── Separator dot ────────────────────────────────────── */
+    .separator {
+      font-size: 2rem;
+      font-weight: 700;
+      opacity: 0.2;
+      color: var(--text, #ffffff);
+      align-self: center;
+      user-select: none;
+      line-height: 1;
+      margin-top: -10px; /* optical centering */
+    }
+
+    /* ─── Ended State ──────────────────────────────────────── */
+    .ended {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ended .emoji {
+      font-size: 3rem;
+      animation: bounce 1s ease infinite alternate;
+    }
+
+    .ended .message {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text, #ffffff);
+    }
+
+    .ended .sub {
+      font-size: 0.8rem;
+      opacity: 0.5;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ─── Animations ───────────────────────────────────────── */
+    @keyframes bounce {
+      from { transform: translateY(0);   }
+      to   { transform: translateY(-8px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+
+    .widget {
+      animation: fadeIn 0.5s ease both;
+    }
+
+    /* ─── Digit flip animation ─────────────────────────────── */
+    .number.changed {
+      animation: flip 0.3s ease;
+    }
+
+    @keyframes flip {
+      0%   { opacity: 0.3; transform: translateY(-6px) scale(0.95); }
+      100% { opacity: 1;   transform: translateY(0)    scale(1);    }
+    }
+
+    /* ─── Responsive ───────────────────────────────────────── */
+    @media (max-width: 420px) {
+      .unit {
+        min-width: 72px;
+        padding: 14px 16px;
+      }
+      .separator {
+        font-size: 1.4rem;
+      }
+      .timer {
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Widget Root ──────────────────────────────────────── -->
+  <div class="widget" id="widget" role="timer" aria-live="polite">
+
+    <!-- Optional Title -->
+    <div class="title" id="titleEl" aria-label="Countdown title"></div>
+
+    <!-- Timer units (days / hours / minutes / seconds) -->
+    <div class="timer" id="timerEl">
+
+      <div class="unit" id="daysUnit">
+        <span class="number" id="daysNum" aria-label="Days">00</span>
+        <span class="label">Days</span>
+      </div>
+
+      <div class="separator" aria-hidden="true">:</div>
+
+      <div class="unit" id="hoursUnit">
+        <span class="number" id="hoursNum" aria-label="Hours">00</span>
+        <span class="label">Hours</span>
+      </div>
+
+      <div class="separator" aria-hidden="true">:</div>
+
+      <div class="unit" id="minutesUnit">
+        <span class="number" id="minutesNum" aria-label="Minutes">00</span>
+        <span class="label">Minutes</span>
+      </div>
+
+      <div class="separator" aria-hidden="true">:</div>
+
+      <div class="unit" id="secondsUnit">
+        <span class="number" id="secondsNum" aria-label="Seconds">00</span>
+        <span class="label">Seconds</span>
+      </div>
+
+    </div>
+
+    <!-- Ended State (hidden until countdown finishes) -->
+    <div class="ended" id="endedEl" role="status">
+      <div class="emoji">🎉</div>
+      <div class="message">Time's Up!</div>
+      <div class="sub">Countdown Ended</div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════
+       Countdown Timer Widget
+       ─────────────────────────────────────────────────────────
+       Reads configuration from URL query parameters:
+         ?title=NEET&end=2026-05-15T09:57:00&bg=#000000&text=#ffffff
+         &daysColor=#ff6b6b&hoursColor=#ffd93d
+         &minutesColor=#6bcb77&secondsColor=#4d96ff
+         &showTitle=true
+    ═══════════════════════════════════════════════════════════ */
+
+    (() => {
+      'use strict';
+
+      /* ── 1. Parse URL query parameters ──────────────────── */
+      const params = new URLSearchParams(window.location.search);
+
+      const cfg = {
+        title      : params.get('title')        || '',
+        end        : params.get('end')           || '',
+        bg         : params.get('bg')            || '#0f0f0f',
+        text       : params.get('text')          || '#ffffff',
+        daysColor  : params.get('daysColor')     || '#ffffff',
+        hoursColor : params.get('hoursColor')    || '#ffffff',
+        minsColor  : params.get('minutesColor')  || '#ffffff',
+        secsColor  : params.get('secondsColor')  || '#ffffff',
+        showTitle  : params.get('showTitle') !== 'false', // default true
+      };
+
+      /* ── 2. Apply CSS custom properties (theming) ───────── */
+      const root = document.documentElement;
+      root.style.setProperty('--bg',   cfg.bg);
+      root.style.setProperty('--text', cfg.text);
+      document.body.style.backgroundColor = cfg.bg;
+      document.body.style.color           = cfg.text;
+
+      /* ── 3. DOM references ──────────────────────────────── */
+      const titleEl   = document.getElementById('titleEl');
+      const timerEl   = document.getElementById('timerEl');
+      const endedEl   = document.getElementById('endedEl');
+      const daysNum   = document.getElementById('daysNum');
+      const hoursNum  = document.getElementById('hoursNum');
+      const minutesNum = document.getElementById('minutesNum');
+      const secondsNum = document.getElementById('secondsNum');
+
+      /* ── 4. Render title ────────────────────────────────── */
+      if (cfg.title && cfg.showTitle) {
+        titleEl.textContent = cfg.title;
+        titleEl.style.display = 'block';
+      } else {
+        titleEl.style.display = 'none';
+      }
+
+      /* ── 5. Apply individual unit colors ────────────────── */
+      daysNum.style.color    = cfg.daysColor;
+      hoursNum.style.color   = cfg.hoursColor;
+      minutesNum.style.color = cfg.minsColor;
+      secondsNum.style.color = cfg.secsColor;
+
+      /* ── 6. Validate the target date ────────────────────── */
+      const targetTime = cfg.end ? new Date(cfg.end).getTime() : NaN;
+
+      if (!cfg.end || isNaN(targetTime)) {
+        // No valid end date — show a placeholder fallback
+        daysNum.textContent    = '--';
+        hoursNum.textContent   = '--';
+        minutesNum.textContent = '--';
+        secondsNum.textContent = '--';
+        console.warn('[Countdown] No valid ?end= parameter found.');
+        return; // stop execution
+      }
+
+      /* ── 7. Helper: pad single digit to 2 chars ─────────── */
+      const pad = (n) => String(Math.floor(n)).padStart(2, '0');
+
+      /* ── 8. Helper: animate digit if value changed ──────── */
+      const updateDigit = (el, newVal) => {
+        if (el.textContent !== newVal) {
+          el.textContent = newVal;
+          // Trigger flip animation by removing and re-adding class
+          el.classList.remove('changed');
+          // Force reflow so animation restarts
+          void el.offsetWidth;
+          el.classList.add('changed');
+        }
+      };
+
+      /* ── 9. Apply unit box background style ─────────────── */
+      // Slightly style unit backgrounds to match theme
+      document.querySelectorAll('.unit').forEach(unit => {
+        // Use a subtle tint of the bg color; keep the rgba overlay
+        unit.style.borderColor = `rgba(${hexToRgb(cfg.text)}, 0.08)`;
+        unit.style.background  = `rgba(${hexToRgb(cfg.text)}, 0.05)`;
+      });
+
+      /* ── 10. Helper: hex color → "r, g, b" string ───────── */
+      function hexToRgb(hex) {
+        // Expand shorthand (#abc → #aabbcc)
+        const full = hex.replace(
+          /^#([a-f\d])([a-f\d])([a-f\d])$/i,
+          (_, r, g, b) => `#${r}${r}${g}${g}${b}${b}`
+        );
+        const result = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(full);
+        return result
+          ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+          : '255, 255, 255';
+      }
+
+      /* ── 11. Separator color ────────────────────────────── */
+      document.querySelectorAll('.separator').forEach(sep => {
+        sep.style.color = cfg.text;
+      });
+
+      /* ── 12. Main tick function ─────────────────────────── */
+      function tick() {
+        const now       = Date.now();
+        const remaining = targetTime - now;
+
+        // Countdown finished
+        if (remaining <= 0) {
+          clearInterval(intervalId);
+          showEnded();
+          return;
+        }
+
+        // Calculate time components
+        const totalSeconds = Math.floor(remaining / 1000);
+        const days         = Math.floor(totalSeconds / 86400);
+        const hours        = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes      = Math.floor((totalSeconds % 3600)  / 60);
+        const seconds      = totalSeconds % 60;
+
+        // Update DOM (only if value changed — avoids unnecessary reflows)
+        updateDigit(daysNum,    pad(days));
+        updateDigit(hoursNum,   pad(hours));
+        updateDigit(minutesNum, pad(minutes));
+        updateDigit(secondsNum, pad(seconds));
+
+        // Update document title (nice touch for browser tab)
+        document.title = `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s${cfg.title ? ' — ' + cfg.title : ''}`;
+      }
+
+      /* ── 13. Show "ended" state ─────────────────────────── */
+      function showEnded() {
+        timerEl.style.display  = 'none';
+        endedEl.style.display  = 'flex';
+        document.title         = cfg.title ? `${cfg.title} — Time's Up!` : "Time's Up!";
+
+        // Respect text color for ended message too
+        endedEl.querySelector('.message').style.color = cfg.text;
+        endedEl.querySelector('.sub').style.color     = cfg.text;
+      }
+
+      /* ── 14. Start the timer ────────────────────────────── */
+      // Run once immediately (no 1s delay on load)
+      tick();
+      const intervalId = setInterval(tick, 1000);
+
+    })(); // end IIFE
+  </script>
+
+</body>
+</html>
