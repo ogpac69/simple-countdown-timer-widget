@@ -1,110 +1,165 @@
-⏱ Countdown Timer (Link-Based + Builder)
 
-A minimal, self-contained countdown timer that doubles as a link generator.
+---
 
-You open the page → configure a date → get a URL → embed or share it anywhere.
-No backend. No dependencies. No patience required.
+# ⏱ Countdown Timer
 
-🚀 Features
-Single HTML file (no build step, no framework)
-Countdown via URL parameters (?end=...)
-Built-in link generator (builder UI)
-Works standalone or embedded (Notion, iframes, etc.)
-Real-time ticking (1s interval)
-Automatic “Time’s Up” state
-Clean, responsive UI
-Clipboard copy support
-🧠 How It Works
+A minimal, single-file countdown timer with a built-in link generator.
+Configure a date, generate a URL, and use it anywhere.
 
-Two modes:
+---
 
-1. Builder Mode (default)
+## Overview
 
-If no ?end= parameter exists:
+This project is a self-contained HTML file that serves two purposes:
 
-Shows UI to input date + optional title
-Generates a shareable countdown URL
-2. Countdown Mode
+* **Builder Mode**: Create a countdown by selecting a date and optional title
+* **Countdown Mode**: Display a live countdown using URL parameters
 
-If ?end= is present:
+No frameworks, no dependencies, no backend.
 
-Parses date from URL
-Starts ticking countdown
-Displays remaining time
-🔗 URL Format
-?end=YYYY-MM-DDTHH:mm
+---
 
-Optional:
+## Features
 
-&title=Your Event Name
-Example:
-https://yourdomain.com/index.html?end=2026-01-01T00:00&title=New%20Year
-📦 Usage
-Option 1 — Direct Use
+* Single HTML file (portable and lightweight)
+* URL-based configuration (`?end=...`)
+* Built-in countdown link generator
+* Real-time updates (1-second interval)
+* Automatic completion state ("Time’s Up")
+* Responsive layout
+* Clipboard copy support
+* Works standalone or embedded
 
-Just open the HTML file in your browser.
+---
 
-Option 2 — Host It
+## How It Works
 
-Upload to:
+The app switches behavior based on the presence of the `end` parameter in the URL.
 
-GitHub Pages
-Netlify
-Vercel
-Any static hosting
-Option 3 — Embed
+### Builder Mode
 
-Use in iframe:
+Triggered when no `end` parameter is present.
 
-<iframe src="YOUR_URL?end=2026-01-01T00:00" width="100%" height="300"></iframe>
-⚠️ Known Limitations (Yes, they exist)
-Uses local browser timezone
-→ No explicit timezone handling
-datetime-local input has no timezone metadata
-Countdown accuracy depends on system clock
-No persistence (no saved configs)
-No support for past dates (auto clamps to zero)
-🛠️ Internal Logic (for people who care)
-Time difference:
-diff = endTime - Date.now()
-Decomposition:
-days = diff / 86400000
-hours = remainder / 3600000
-minutes = remainder / 60000
-seconds = remainder / 1000
-Update loop:
-setInterval(tick, 1000)
-Stops when:
-diff === 0
-🧪 Edge Cases Handled
-Invalid date → shows error message
-Past date → stops immediately + shows "Time’s Up"
-Empty input → blocked in builder
-Clipboard fallback for insecure contexts
-🧹 Why This Exists
+* Displays input fields for:
 
-Because most countdown tools:
+  * Event title (optional)
+  * Target date and time
+* Generates a shareable countdown URL
+* Provides copy-to-clipboard functionality
 
-require accounts
-inject branding
-overcomplicate basic logic
+### Countdown Mode
 
-This does exactly one thing:
+Triggered when `?end=` is present in the URL.
 
-count time down, without drama
+* Parses the target date
+* Calculates remaining time
+* Updates countdown every second
+* Displays a completion message when time reaches zero
 
-📁 File Structure
-index.html   ← everything lives here (CSS + JS inline)
-🔧 Possible Improvements
+---
 
-If you feel like evolving it beyond “simple but functional”:
+## URL Parameters
 
-Add timezone support (proper parsing, not local-only)
-Persist configs via localStorage
-Add themes/custom colors
-Support multiple timers
-Add progress bar
-Add count-up mode
-📜 License
+### Required
 
-Use it, modify it, break it. No one’s stopping you.
+* `end`
+  Format: `YYYY-MM-DDTHH:mm`
+  Example:
+
+  ```
+  ?end=2026-01-01T00:00
+  ```
+
+### Optional
+
+* `title`
+  Example:
+
+  ```
+  ?end=2026-01-01T00:00&title=New%20Year
+  ```
+
+---
+
+## Usage
+
+### Run Locally
+
+Open the HTML file directly in a browser.
+
+### Deploy
+
+Host the file on any static hosting platform:
+
+* GitHub Pages
+* Netlify
+* Vercel
+
+### Embed
+
+```html
+<iframe 
+  src="https://yourdomain.com/index.html?end=2026-01-01T00:00" 
+  width="100%" 
+  height="300">
+</iframe>
+```
+
+---
+
+## Behavior Details
+
+* Time is calculated using:
+
+  ```
+  remaining = endTime - currentTime
+  ```
+* Values are updated every second using `setInterval`
+* Countdown stops automatically at zero
+* Negative time is clamped to zero
+
+---
+
+## Error Handling
+
+* Missing `end` → Builder Mode shown
+* Invalid date → Error message displayed
+* Past date → Countdown immediately completes
+
+---
+
+## Limitations
+
+* Uses browser’s local timezone (no timezone normalization)
+* Depends on system clock accuracy
+* No persistent storage (settings are not saved)
+* No support for seconds in input (limited by `datetime-local`)
+
+---
+
+## File Structure
+
+```
+index.html
+```
+
+All logic, styles, and UI are contained within a single file.
+
+---
+
+## Possible Improvements
+
+* Add timezone support
+* Store last configuration (localStorage)
+* Custom themes and colors
+* Progress indicator
+* Count-up mode
+* Multiple timers support
+
+---
+
+## License
+
+Open for use and modification.
+
+---
